@@ -29,7 +29,7 @@ phone-type/
 
 ## 技术边界
 
-- PC：Node ≥ 20，仅用 `ws`；注入走 PowerShell `Clipboard`/`SendKeys` 或 Python ctypes，**不用** robotjs/nut-js 等需编译的原生模块。
+- PC：Node ≥ 20，仅用 `ws`；注入走 `powershell.exe`（`Clipboard`/`SendKeys`），**不用** robotjs/nut-js 等需编译的原生模块。
 - Android：minSdk 26，Kotlin，`OkHttp` WebSocket；权限：`INTERNET`、`SYSTEM_ALERT_WINDOW`、前台 Service。
 - 不做：音频采集/ASR、公网穿透、多设备队列、iOS、网页版客户端。
 
@@ -54,7 +54,7 @@ phone-type/
 
 // PC → 手机
 {"type":"welcome","server":"phone-type","ok":true}
-{"type":"error","code":"bad_pin"|"inject_failed"|"not_hello"}
+{"type":"error","code":"bad_pin"|"bad_json"|"not_hello"|"empty_text"|"too_long"|"inject_failed"|"unknown_type"}
 {"type":"ack","seq":1,"ok":true,"method":"clipboard"}
 {"type":"pong"}
 ```

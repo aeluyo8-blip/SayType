@@ -1,14 +1,25 @@
 ---
 feature: phone-type
-status: in-progress
+status: delivered
 updated: 2026-07-28
 branch: feat/mvp
-commits: 4dcc421..4dcc421
+commits: 4dcc421..<head>
 ---
 
 # Phone → PC Cursor Typing
 
 ## Report
+
+**What was built** — Windows 本地服务（`npm start`）打印局域网 IP / 端口 / PIN，经 WebSocket 鉴权后把手机发来的文字用「剪贴板 + Ctrl+V」写入当前前台光标；中文走 base64 UTF-8，避免引号与编码问题。Android 工程源码提供设置页（IP/端口/PIN）、悬浮球前台 Service、输入弹层与 OkHttp 客户端，用系统 IME（微信/豆包）说话后点发送。本机无 Android SDK，未编译 APK。
+
+**Verification** — `npm test` 2 passed；`node scripts/verify-pc.mjs` 对记事本空文件注入中文并存盘读回 matched=true（VERIFY_PC_PASS）；错误 PIN 返回 `bad_pin` 并断开。Android 未在本机编译。
+
+**Journey log** —
+1. 评审指出 WsManager 重连竞态（旧 socket 回调可能清掉新会话）→ 用 generation token + compareAndSet 修复。
+2. 并发 text 帧会交错两次剪贴板注入 → 服务端 promise 链串行化。
+3. 验证脚本曾用全局剪贴板读回，混入其它窗口内容且控制台编码损坏中文 → 改为记事本写临时文件再读盘。
+4. 不传音频、不做网页壳：按你的决策只交付 Android 源码 + PC 服务。
+5. 首次 e2e 偶发 notepad 焦点失败，重跑通过；生产依赖「用户正在操作的目标窗口」本就允许偶发焦点漂移。
 
 ## [S1] Problem
 
