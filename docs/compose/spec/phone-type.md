@@ -1,9 +1,9 @@
 ---
 feature: phone-type
-status: designed
-updated: 2026-06-14
+status: in-progress
+updated: 2026-07-28
 branch: feat/mvp
-commits:
+commits: 4dcc421..4dcc421
 ---
 
 # Phone → PC Cursor Typing
@@ -75,10 +75,10 @@ PC Node 服务（PIN 鉴权）
 
 ## Tasks
 
-- [ ] T1: PC 服务骨架 + PIN/局域网展示 + WS 握手 — acceptance: `npm start` 打印 IP/端口/PIN，未 hello 的 text 被拒 (covers: S2)
-- [ ] T2: 剪贴板 + Ctrl+V 注入模块 — acceptance: 本地脚本对记事本/浏览器焦点写入中文成功，失败返回 inject_failed (covers: S2)
-- [ ] T3: WS text → inject 接通与日志 — acceptance: 模拟客户端发中文，前台窗口出现文字，日志无原文 (covers: S2)
-- [ ] T4: Android 工程骨架与设置页 — acceptance: Gradle 工程结构完整，可配置 IP/端口/PIN 并发起连接 (covers: S2; depends: T1)
-- [ ] T5: 悬浮球 Service + 输入弹层 + 发送 — acceptance: 源码含 overlay 权限引导、前台 Service、发送 JSON text (covers: S2; depends: T4)
-- [ ] T6: README 使用说明与权限/厂商坑 — acceptance: 用户能按文档从 npm start 走到 Android Studio 安装 (covers: S2)
-- [ ] T7: 本机验证 PC 链路 — acceptance: 用真实 WS 客户端注入中文到焦点窗口并记录结果 (covers: S2; depends: T2, T3)
+- [x] T1: PC 服务骨架 + PIN/局域网展示 + WS 握手 — acceptance: `npm start` 打印 IP/端口/PIN，未 hello 的 text 被拒 (covers: S2)
+- [x] T2: 剪贴板 + Ctrl+V 注入模块 — acceptance: 本地脚本对记事本/浏览器焦点写入中文成功，失败返回 inject_failed (covers: S2)
+- [x] T3: WS text → inject 接通与日志 — acceptance: 模拟客户端发中文，前台窗口出现文字，日志无原文 (covers: S2)
+- [x] T4: Android 工程骨架与设置页 — acceptance: Gradle 工程结构完整，可配置 IP/端口/PIN 并发起连接 (covers: S2; depends: T1)
+- [x] T5: 悬浮球 Service + 输入弹层 + 发送 — acceptance: 源码含 overlay 权限引导、前台 Service、发送 JSON text (covers: S2; depends: T4)
+- [x] T6: README 使用说明与权限/厂商坑 — acceptance: 用户能按文档从 npm start 走到 Android Studio 安装 (covers: S2)
+- [x] T7: 本机验证 PC 链路 — acceptance: 用真实 WS 客户端注入中文到焦点窗口并记录结果 (covers: S2; depends: T2, T3)
