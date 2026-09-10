@@ -145,6 +145,7 @@ class FloatingBubbleService : Service() {
         if (panelView != null) {
             removeOverlay(panelView)
             panelView = null
+            statusText = null
             return
         }
         showPanel()

@@ -13,6 +13,17 @@ const server = http.createServer((_req, res) => {
 
 const wss = new WebSocketServer({ server });
 
+// Serialize clipboard+Ctrl+V so concurrent text frames cannot interleave.
+let injectChain = Promise.resolve();
+function enqueueInject(text) {
+  const run = injectChain.then(() => injectText(text));
+  injectChain = run.then(
+    () => undefined,
+    () => undefined
+  );
+  return run;
+}
+
 function send(ws, obj) {
   if (ws.readyState === ws.OPEN) {
     ws.send(JSON.stringify(obj));
@@ -71,7 +82,7 @@ wss.on('connection', (ws, req) => {
       }
       log(`text seq=${seq ?? '-'} len=${text.length}`);
       try {
-        const r = await injectText(text);
+        const r = await enqueueInject(text);
         send(ws, { type: 'ack', seq, ok: true, method: r.method });
       } catch (e) {
         const code = e.code === 'inject_failed' || e.code === 'empty_text' || e.code === 'too_long'
