@@ -1,0 +1,17 @@
+{
+  "name": "phone-type",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Phone keyboard text → Windows cursor via LAN WebSocket",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node server/index.mjs",
+    "test": "node --test test/inject.unit.mjs"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}
