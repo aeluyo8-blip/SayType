@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">phone-type</string>
+    <string name="subtitle">手机说话成字，一键打到电脑光标处（需同一局域网）</string>
+    <string name="label_host">PC 局域网 IP</string>
+    <string name="hint_host">192.168.x.x</string>
+    <string name="label_port">端口</string>
+    <string name="hint_port">8787</string>
+    <string name="label_pin">PIN（PC 控制台显示）</string>
+    <string name="hint_pin">6 位数字</string>
+    <string name="btn_overlay_perm">1. 授予悬浮窗权限</string>
+    <string name="btn_save">2. 保存配置</string>
+    <string name="btn_start_bubble">3. 启动悬浮球</string>
+    <string name="btn_connect">4. 连接 PC</string>
+    <string name="btn_stop">停止悬浮球</string>
+    <string name="btn_send">发送到电脑</string>
+    <string name="btn_clear">清空</string>
+    <string name="btn_close">收起</string>
+    <string name="hint_input">在这里用语音输入法说话…</string>
+</resources>
