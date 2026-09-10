@@ -3,7 +3,7 @@ feature: phone-type
 status: delivered
 updated: 2026-07-28
 branch: feat/mvp
-commits: 4dcc421..<head>
+commits: 4dcc421..5deb76d
 ---
 
 # Phone → PC Cursor Typing
