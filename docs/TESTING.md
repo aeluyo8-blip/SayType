@@ -53,14 +53,16 @@ USB 调试时可用 `adb reverse tcp:8787 tcp:8787`，让手机填 `127.0.0.1:87
 
 ## 启动 PC 服务
 
-**推荐：双击 `启动服务.bat`（托盘模式）**
-- 服务在后台隐藏运行，任务栏/系统托盘有蓝色 **S** 图标
-- 双击图标或右键「显示 PIN / 地址」可再看 PIN
-- 右键「重启服务」「停止服务并退出」
-- 端口 8787 被占用时会弹窗 Y/N 询问是否结束旧进程
-- 状态文件：`runtime/status.json`（pid/pin/addrs）；日志：`runtime/server.log`
+**推荐：双击 `启动服务.bat`（托盘模式，v0.3.x）**
+- 经 VBS 静默启动，**无常驻黑窗口**
+- 系统托盘蓝色 **S** 图标
+- 双击 / 右键「显示二维码」：弹窗显示 PIN + 实时二维码（按当前 PIN 每次重生成）
+- 右键「显示 PIN / 地址」「重启服务」「停止服务并退出」
+- 端口 8787 被占用 → MessageBox Y/N 是否结束旧进程
+- 首次自动放行防火墙 8787
+- 状态：`runtime/status.json`（pid/pin/addrs/configUri）；QR：`runtime/config-qr.png`；日志：`runtime/server.log`
 
-也可用 `显示PIN.bat` / `停止服务.bat`。开发时仍可前台跑：
+辅助：`显示PIN.bat`、`停止服务.bat`。开发时仍可前台跑：
 
 ```bash
 cd /d/Workspace/phone-type
@@ -68,10 +70,21 @@ npm install            # 仅首次
 node server/index.mjs
 ```
 
-- 启动横幅会打印端口、6 位 PIN、局域网地址列表和配置二维码（内容 `phonetype://IP:8787?pin=xxxxxx`）。
-- 想固定 PIN 方便自动化测试：`PHONE_TYPE_PIN=246810 node server/index.mjs`（仅测试用，别把 PIN 提交进 git）。
-- 可调环境变量：`PHONE_TYPE_HEARTBEAT_MS`（默认 30000，心跳间隔）、`PHONE_TYPE_PS_TIMEOUT`（PowerShell 注入超时，默认 5000）。
-- 端口被占用会打印友好提示退出（这是现状，改进项见 KNOWN-ISSUES #3）。
+- 想固定 PIN：`PHONE_TYPE_PIN=246810 node server/index.mjs`（仅测试，勿提交 git）
+- 可调：`PHONE_TYPE_HEARTBEAT_MS`（默认 30000）、`PHONE_TYPE_PS_TIMEOUT`（默认 5000）
+- 托盘模式需设 `PHONE_TYPE_STATUS_FILE` 才会写 status.json / 生成二维码
+
+## 手动验收清单（发版前）
+
+1. `gradlew assembleDebug` 通过  
+2. 装最新 APK（根目录 `phone-type-v0.3.2.apk`）  
+3. 扫码或手动配对 → 三 Tab 正常  
+4. 悬浮球：拖动、贴边、点开面板；**面板打开时无球**  
+5. 收起后约 2s 自动贴边；点贴边球只展开  
+6. **点面板外第一次只收起，不误触底层 App**  
+7. 发送成功 / 失败在「记录」中区分；SENT≤200  
+8. 托盘：无黑窗、能弹二维码、Y/N 端口占用  
+9. 改功能则 bump versionCode/versionName 并更新根目录 APK  
 
 ## 自动化测试
 
