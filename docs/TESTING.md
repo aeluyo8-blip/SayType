@@ -53,6 +53,15 @@ USB 调试时可用 `adb reverse tcp:8787 tcp:8787`，让手机填 `127.0.0.1:87
 
 ## 启动 PC 服务
 
+**推荐：双击 `启动服务.bat`（托盘模式）**
+- 服务在后台隐藏运行，任务栏/系统托盘有蓝色 **S** 图标
+- 双击图标或右键「显示 PIN / 地址」可再看 PIN
+- 右键「重启服务」「停止服务并退出」
+- 端口 8787 被占用时会弹窗 Y/N 询问是否结束旧进程
+- 状态文件：`runtime/status.json`（pid/pin/addrs）；日志：`runtime/server.log`
+
+也可用 `显示PIN.bat` / `停止服务.bat`。开发时仍可前台跑：
+
 ```bash
 cd /d/Workspace/phone-type
 npm install            # 仅首次
