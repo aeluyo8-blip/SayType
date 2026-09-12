@@ -11,3 +11,4 @@ android/.idea/
 .server-pin
 
 runtime/
+tmp-*
