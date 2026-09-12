@@ -39,42 +39,100 @@ function New-TrayIcon {
     return $icon
 }
 
-function Show-Pin {
-    $j = $null
-    if (Test-Path $StatusFile) {
-        try { $j = Get-Content -Raw $StatusFile | ConvertFrom-Json } catch { }
-    }
+function Get-Status {
+    if (-not (Test-Path $StatusFile)) { return $null }
+    try { return (Get-Content -Raw $StatusFile | ConvertFrom-Json) } catch { return $null }
+}
+
+function Ensure-QrFile {
+    param($j)
+    $qrPath = Join-Path $Root 'runtime\config-qr.png'
+    if (-not $j -or -not $j.configUri) { return $null }
+    if (Test-Path $qrPath) { return $qrPath }
+    $env:PHONE_TYPE_QR_URI = $j.configUri
+    $env:PHONE_TYPE_QR_PATH = $qrPath
+    & node -e "import('qrcode').then(async m=>{await m.default.toFile(process.env.PHONE_TYPE_QR_PATH,process.env.PHONE_TYPE_QR_URI,{width:360,margin:2,color:{dark:'#101828',light:'#FFFFFF'}});})"
+    if (Test-Path $qrPath) { return $qrPath }
+    return $null
+}
+
+function Show-Qr {
+    $j = Get-Status
     if (-not $j) {
         [void][System.Windows.MessageBox]::Show('服务未运行或无法读取 status.json', 'SayType', 'OK', 'Warning')
         return
     }
-    $addrs = @()
-    if ($j.addrs) { foreach ($a in $j.addrs) { $addrs += ("ws://{0}:{1}" -f $a, $j.port) } }
-    $addrText = if ($addrs.Count) { $addrs -join [Environment]::NewLine } else { '(no LAN IP)' }
-    $msg = "PIN: " + $j.pin + [Environment]::NewLine + [Environment]::NewLine + "地址:" + [Environment]::NewLine + $addrText + [Environment]::NewLine + [Environment]::NewLine + "PID: " + $j.pid
-    [void][System.Windows.MessageBox]::Show($msg, 'SayType PIN', 'OK', 'Information')
-}
-
-function Show-Qr {
-    $qrPath = Join-Path $Root 'runtime\config-qr.png'
-    $j = $null
-    if (Test-Path $StatusFile) {
-        try { $j = Get-Content -Raw $StatusFile | ConvertFrom-Json } catch { }
-    }
-    if (-not $j) {
-        [void][System.Windows.MessageBox]::Show('服务未运行', 'SayType', 'OK', 'Warning')
+    $qrPath = Ensure-QrFile -j $j
+    if (-not $qrPath) {
+        [void][System.Windows.MessageBox]::Show('二维码生成失败，可手动填写 IP/PIN', 'SayType', 'OK', 'Error')
         return
     }
-    if (-not (Test-Path $qrPath) -and $j.configUri) {
-        $env:PHONE_TYPE_QR_URI = $j.configUri
-        $env:PHONE_TYPE_QR_PATH = $qrPath
-        & node -e "import('qrcode').then(async m=>{await m.default.toFile(process.env.PHONE_TYPE_QR_PATH,process.env.PHONE_TYPE_QR_URI,{width:320,margin:2});})"
-    }
-    if (Test-Path $qrPath) {
-        Start-Process $qrPath
-    } else {
-        [void][System.Windows.MessageBox]::Show('二维码生成失败，可手动填写 IP/PIN', 'SayType', 'OK', 'Error')
-    }
+
+    $addrs = @()
+    if ($j.addrs) { foreach ($a in $j.addrs) { $addrs += ("ws://{0}:{1}" -f $a, $j.port) } }
+    $addrText = if ($addrs.Count) { $addrs -join '   ' } else { '(no LAN IP)' }
+
+    $form = New-Object System.Windows.Forms.Form
+    $form.Text = 'SayType 扫码配置'
+    $form.FormBorderStyle = 'FixedDialog'
+    $form.StartPosition = 'CenterScreen'
+    $form.MaximizeBox = $false
+    $form.MinimizeBox = $false
+    $form.TopMost = $true
+    $form.BackColor = [System.Drawing.Color]::FromArgb(248, 250, 252)
+    $form.ClientSize = New-Object System.Drawing.Size(360, 470)
+    $form.FormBorderStyle = 'SizableToolWindow'
+
+    $title = New-Object System.Windows.Forms.Label
+    $title.Text = '用手机 SayType 扫码配置'
+    $title.Font = New-Object System.Drawing.Font 'Microsoft YaHei UI', 12, ([System.Drawing.FontStyle]::Bold)
+    $title.ForeColor = [System.Drawing.Color]::FromArgb(16, 24, 40)
+    $title.AutoSize = $true
+    $title.Location = New-Object System.Drawing.Point(24, 16)
+    $form.Controls.Add($title)
+
+    $pinLabel = New-Object System.Windows.Forms.Label
+    $pinLabel.Text = 'PIN  ' + $j.pin
+    $pinLabel.Font = New-Object System.Drawing.Font 'Consolas', 18, ([System.Drawing.FontStyle]::Bold)
+    $pinLabel.ForeColor = [System.Drawing.Color]::FromArgb(26, 115, 232)
+    $pinLabel.AutoSize = $true
+    $pinLabel.Location = New-Object System.Drawing.Point(24, 48)
+    $form.Controls.Add($pinLabel)
+
+    $pic = New-Object System.Windows.Forms.PictureBox
+    $pic.Size = New-Object System.Drawing.Size(312, 312)
+    $pic.Location = New-Object System.Drawing.Point(24, 92)
+    $pic.SizeMode = 'Zoom'
+    $pic.BackColor = [System.Drawing.Color]::White
+    $pic.BorderStyle = 'FixedSingle'
+    $img = New-Object System.Drawing.Bitmap($qrPath)
+    $pic.Image = $img
+    $form.Controls.Add($pic)
+
+    $addr = New-Object System.Windows.Forms.Label
+    $addr.Text = $addrText
+    $addr.Font = New-Object System.Drawing.Font 'Consolas', 9
+    $addr.ForeColor = [System.Drawing.Color]::FromArgb(71, 84, 103)
+    $addr.Location = New-Object System.Drawing.Point(24, 416)
+    $addr.Size = New-Object System.Drawing.Size(312, 20)
+    $form.Controls.Add($addr)
+
+    $hint = New-Object System.Windows.Forms.Label
+    $hint.Text = '手机与电脑需在同一局域网'
+    $hint.Font = New-Object System.Drawing.Font 'Microsoft YaHei UI', 8
+    $hint.ForeColor = [System.Drawing.Color]::FromArgb(148, 163, 184)
+    $hint.Location = New-Object System.Drawing.Point(24, 438)
+    $hint.AutoSize = $true
+    $form.Controls.Add($hint)
+
+    $form.Add_Shown({ $form.Activate() })
+    [void]$form.ShowDialog()
+    if ($pic.Image) { $pic.Image.Dispose() }
+    $form.Dispose()
+}
+
+function Show-Pin {
+    Show-Qr
 }
 
 function Start-NodeService {
