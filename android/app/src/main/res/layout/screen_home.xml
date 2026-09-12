@@ -95,10 +95,13 @@
             </LinearLayout>
 
             <LinearLayout
+                android:id="@+id/latencyBox"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:background="?attr/selectableItemBackground"
                 android:gravity="end"
-                android:orientation="vertical">
+                android:orientation="vertical"
+                android:padding="4dp 6dp">
 
                 <TextView
                     android:id="@+id/homeLatency"
@@ -110,9 +113,10 @@
                     android:textStyle="bold" />
 
                 <TextView
+                    android:id="@+id/homeLatencyLabel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/latency"
+                    android:text="@string/latency_tap"
                     android:textColor="@color/ink_3"
                     android:textSize="11sp" />
             </LinearLayout>

@@ -252,6 +252,25 @@ class MainActivity : AppCompatActivity() {
             toggleBubbleService(on)
             refreshAll()
         }
+        // 主动测延迟：点一下才 ping
+        v.findViewById<View>(R.id.latencyBox)?.setOnClickListener { measureRttNow() }
+    }
+
+    private fun measureRttNow() {
+        val tv = homeView?.findViewById<TextView>(R.id.homeLatency) ?: return
+        if (!AppBus.isConnected) {
+            tv.text = "—"
+            Toast.makeText(this, R.string.latency_need_conn, Toast.LENGTH_SHORT).show()
+            return
+        }
+        tv.text = getString(R.string.latency_testing)
+        AppBus.ws?.measureRtt { ms ->
+            runOnUiThread {
+                AppBus.lastRttMs = if (ms >= 0) ms.toInt() else null
+                tv.text = if (ms >= 0) getString(R.string.latency_ms, ms.toInt())
+                else getString(R.string.latency_fail)
+            }
+        }
     }
 
     private fun bindHistory(v: View) {
@@ -385,7 +404,7 @@ class MainActivity : AppCompatActivity() {
         val port = Prefs.port(this)
         v.findViewById<TextView>(R.id.homeAddr).text =
             getString(R.string.addr_fmt, host, port.toString()) + " · " + getString(R.string.same_wifi)
-        v.findViewById<TextView>(R.id.homeLatency).text = AppBus.lastRttMs?.let { "${it}ms" } ?: "—"
+        v.findViewById<TextView>(R.id.homeLatency).text = AppBus.lastRttMs?.let { getString(R.string.latency_ms, it) } ?: "—"
         val ballOn = Prefs.ballEnabled(this)
         v.findViewById<TextView>(R.id.ballStateText).text =
             getString(if (ballOn) R.string.ball_running else R.string.ball_stopped)
