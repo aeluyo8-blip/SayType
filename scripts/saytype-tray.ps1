@@ -48,7 +48,10 @@ function Ensure-QrFile {
     param($j)
     $qrPath = Join-Path $Root 'runtime\config-qr.png'
     if (-not $j -or -not $j.configUri) { return $null }
-    if (Test-Path $qrPath) { return $qrPath }
+    # always regenerate so PIN/IP is current
+    if (Test-Path $qrPath) {
+        try { Remove-Item $qrPath -Force } catch { }
+    }
     $env:PHONE_TYPE_QR_URI = $j.configUri
     $env:PHONE_TYPE_QR_PATH = $qrPath
     & node -e "import('qrcode').then(async m=>{await m.default.toFile(process.env.PHONE_TYPE_QR_PATH,process.env.PHONE_TYPE_QR_URI,{width:360,margin:2,color:{dark:'#101828',light:'#FFFFFF'}});})"
@@ -138,6 +141,7 @@ function Show-Pin {
 function Start-NodeService {
     New-Item -ItemType Directory -Force -Path (Join-Path $Root 'runtime') | Out-Null
     Remove-Item $StatusFile -ErrorAction SilentlyContinue
+    Remove-Item (Join-Path $Root 'runtime\config-qr.png') -ErrorAction SilentlyContinue
     $env:PHONE_TYPE_STATUS_FILE = $StatusFile
     $script:nodeProc = Start-Process -FilePath 'node' `
         -ArgumentList 'server/index.mjs' `
