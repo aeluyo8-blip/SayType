@@ -475,21 +475,12 @@ class FloatingBubbleService : Service() {
             WindowManager.LayoutParams.MATCH_PARENT,
             WindowManager.LayoutParams.MATCH_PARENT,
             overlayType(),
-            // 不加 FLAG_NOT_TOUCH_MODAL：整窗吃点击，避免穿透
             WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
             PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.TOP or Gravity.START
             softInputMode = WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
         }
-
-        // 把面板内容顶到上中部（原布局 padding 基础上再抬高）
-        card.setPadding(
-            card.paddingLeft,
-            (88 * density).toInt(),
-            card.paddingRight,
-            card.paddingBottom
-        )
 
         wm.addView(host, params)
         panelView = host
