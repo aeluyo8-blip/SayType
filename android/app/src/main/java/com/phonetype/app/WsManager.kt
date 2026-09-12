@@ -40,6 +40,36 @@ class WsManager(
     private var lastPort = 0
     private var lastPin = ""
 
+    @Volatile
+    private var rttStartNs = 0L
+
+    @Volatile
+    private var rttCallback: ((ms: Long) -> Unit)? = null
+
+    /** 用户点击后主动测一次 RTT；未连接返回 -1 */
+    fun measureRtt(cb: (ms: Long) -> Unit) {
+        val ws = wsRef.get()
+        if (ws == null || !authed.get()) {
+            cb(-1L)
+            return
+        }
+        rttStartNs = System.nanoTime()
+        rttCallback = cb
+        val ok = ws.send(JSONObject().put("type", "ping").toString())
+        if (!ok) {
+            rttCallback = null
+            cb(-1L)
+            return
+        }
+        // 3s 无 pong 视为失败
+        reconnectHandler.postDelayed({
+            if (rttCallback === cb) {
+                rttCallback = null
+                cb(-1L)
+            }
+        }, 3000)
+    }
+
     fun isConnected(): Boolean = wsRef.get() != null && authed.get()
 
     fun connect(host: String, port: Int, pin: String) {
@@ -162,7 +192,14 @@ class WsManager(
                     onStatus("协议错误：未握手")
                 }
             }
-            "pong" -> Unit
+            "pong" -> {
+                val cb = rttCallback
+                if (cb != null && rttStartNs > 0L) {
+                    rttCallback = null
+                    val ms = (System.nanoTime() - rttStartNs) / 1_000_000L
+                    cb(ms)
+                }
+            }
             else -> Unit
         }
     }
