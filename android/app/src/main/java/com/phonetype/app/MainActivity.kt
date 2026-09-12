@@ -256,6 +256,7 @@ class MainActivity : AppCompatActivity() {
             HistoryStore.clear(this, if (histSent) HistoryStore.Kind.SENT else HistoryStore.Kind.NOTE)
             refreshHistory()
         }
+        v.findViewById<View>(R.id.btnExportHist)?.setOnClickListener { exportHistory() }
     }
 
     private fun bindSettings(v: View) {
@@ -413,31 +414,63 @@ class MainActivity : AppCompatActivity() {
         val items = HistoryStore.list(this, if (histSent) HistoryStore.Kind.SENT else HistoryStore.Kind.NOTE)
         list.removeAllViews()
         val fmt = SimpleDateFormat("MM-dd HH:mm", Locale.getDefault())
+        val pad = (10 * resources.displayMetrics.density).toInt()
         if (items.isEmpty()) {
             val empty = TextView(this).apply {
-                setPadding(0, 24, 0, 0)
+                setPadding(0, 32, 0, 0)
                 gravity = android.view.Gravity.CENTER
                 text = getString(if (histSent) R.string.empty_sent else R.string.empty_notes)
                 setTextColor(getColor(R.color.ink_3))
             }
             list.addView(empty)
         } else {
+            val inflater = LayoutInflater.from(this)
             items.forEach { e ->
-                val row = TextView(this).apply {
-                    setBackgroundResource(R.drawable.bg_card)
-                    setPadding(28, 20, 28, 20)
-                    val mark = if (e.ok) "✓" else "✗"
-                    text = "$mark  ${fmt.format(Date(e.atMs))}\n${e.text}"
-                    textSize = 14f
-                    setTextColor(getColor(if (e.ok) R.color.ink else R.color.err))
+                val row = inflater.inflate(R.layout.item_history, list, false)
+                row.findViewById<TextView>(R.id.itemTime).text =
+                    if (e.ok) fmt.format(Date(e.atMs)) else "${fmt.format(Date(e.atMs))} · 失败"
+                row.findViewById<TextView>(R.id.itemText).text = e.text
+                val dot = row.findViewById<View>(R.id.statusDot)
+                if (e.ok) {
+                    dot.background.setTint(getColor(R.color.ok))
+                } else {
+                    dot.background.setTint(getColor(R.color.err))
+                }
+                row.findViewById<View>(R.id.btnCopy).setOnClickListener {
+                    val cm = getSystemService(android.content.Context.CLIPBOARD_SERVICE)
+                        as android.content.ClipboardManager
+                    cm.setPrimaryClip(
+                        android.content.ClipData.newPlainText("saytype", e.text)
+                    )
+                    Toast.makeText(this, R.string.copied, Toast.LENGTH_SHORT).show()
                 }
                 val lp = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT
                 )
-                lp.bottomMargin = (10 * resources.displayMetrics.density).toInt()
+                lp.bottomMargin = pad
                 list.addView(row, lp)
             }
+        }
+    }
+
+    private fun exportHistory() {
+        val kind = if (histSent) HistoryStore.Kind.SENT else HistoryStore.Kind.NOTE
+        val text = HistoryStore.exportText(this, kind)
+        if (text.isBlank()) {
+            Toast.makeText(this, R.string.export_empty, Toast.LENGTH_SHORT).show()
+            return
+        }
+        val name = if (histSent) "saytype-sent.txt" else "saytype-notes.txt"
+        val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(android.content.Intent.EXTRA_TEXT, text)
+            putExtra(android.content.Intent.EXTRA_SUBJECT, name)
+        }
+        try {
+            startActivity(android.content.Intent.createChooser(intent, getString(R.string.btn_export)))
+        } catch (_: Exception) {
+            Toast.makeText(this, R.string.export_failed, Toast.LENGTH_SHORT).show()
         }
     }
 
