@@ -389,37 +389,36 @@ class FloatingBubbleService : Service() {
         )
     }
 
+    private var savedBubbleParams: WindowManager.LayoutParams? = null
+
     private fun hideBubbleForPanel() {
         cancelMorph()
         cancelIdleDock()
-        bubbleView?.let { v ->
-            val a = ValueAnimator.ofFloat(v.alpha, 0f).apply {
-                duration = 120
-                interpolator = android.view.animation.PathInterpolator(0.4f, 0f, 1f, 1f)
-            }
-            a.addUpdateListener {
-                v.alpha = it.animatedValue as Float
-            }
-            a.doOnEnd {
-                v.visibility = View.GONE
-                v.alpha = 1f
-            }
-            morphAnim = a
-            a.start()
+        val v = bubbleView ?: return
+        // 真正从 WindowManager 移除，避免 GONE 仍占触摸层
+        try {
+            savedBubbleParams = v.layoutParams as? WindowManager.LayoutParams
+            wm.removeView(v)
+        } catch (_: Exception) {
         }
     }
 
     private fun restoreBubbleAfterPanel() {
-        bubbleView?.let { v ->
-            v.visibility = View.VISIBLE
-            v.alpha = 0f
-            val a = ValueAnimator.ofFloat(0f, 1f).apply {
-                duration = 180
-                interpolator = android.view.animation.PathInterpolator(0.2f, 0f, 0f, 1f)
+        val v = bubbleView ?: return
+        val lp = savedBubbleParams
+        if (lp != null) {
+            try {
+                wm.addView(v, lp)
+            } catch (_: Exception) {
             }
-            a.addUpdateListener { v.alpha = it.animatedValue as Float }
-            a.start()
         }
+        v.alpha = 0f
+        val a = ValueAnimator.ofFloat(0f, 1f).apply {
+            duration = 180
+            interpolator = android.view.animation.PathInterpolator(0.2f, 0f, 0f, 1f)
+        }
+        a.addUpdateListener { v.alpha = it.animatedValue as Float }
+        a.start()
         if (docked) undockAnimated(300)
         scheduleIdleDock()
     }
