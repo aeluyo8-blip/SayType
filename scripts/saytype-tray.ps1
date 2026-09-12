@@ -55,6 +55,28 @@ function Show-Pin {
     [void][System.Windows.MessageBox]::Show($msg, 'SayType PIN', 'OK', 'Information')
 }
 
+function Show-Qr {
+    $qrPath = Join-Path $Root 'runtime\config-qr.png'
+    $j = $null
+    if (Test-Path $StatusFile) {
+        try { $j = Get-Content -Raw $StatusFile | ConvertFrom-Json } catch { }
+    }
+    if (-not $j) {
+        [void][System.Windows.MessageBox]::Show('服务未运行', 'SayType', 'OK', 'Warning')
+        return
+    }
+    if (-not (Test-Path $qrPath) -and $j.configUri) {
+        $env:PHONE_TYPE_QR_URI = $j.configUri
+        $env:PHONE_TYPE_QR_PATH = $qrPath
+        & node -e "import('qrcode').then(async m=>{await m.default.toFile(process.env.PHONE_TYPE_QR_PATH,process.env.PHONE_TYPE_QR_URI,{width:320,margin:2});})"
+    }
+    if (Test-Path $qrPath) {
+        Start-Process $qrPath
+    } else {
+        [void][System.Windows.MessageBox]::Show('二维码生成失败，可手动填写 IP/PIN', 'SayType', 'OK', 'Error')
+    }
+}
+
 function Start-NodeService {
     New-Item -ItemType Directory -Force -Path (Join-Path $Root 'runtime') | Out-Null
     Remove-Item $StatusFile -ErrorAction SilentlyContinue
@@ -124,15 +146,18 @@ $script:tray.Text = 'SayType 启动中…'
 $script:tray.Visible = $true
 
 $menu = New-Object System.Windows.Forms.ContextMenuStrip
+$miQr = New-Object System.Windows.Forms.ToolStripMenuItem '显示二维码（扫码配置）'
 $miPin = New-Object System.Windows.Forms.ToolStripMenuItem '显示 PIN / 地址'
 $miRestart = New-Object System.Windows.Forms.ToolStripMenuItem '重启服务'
 $miExit = New-Object System.Windows.Forms.ToolStripMenuItem '停止服务并退出'
+$menu.Items.Add($miQr) | Out-Null
 $menu.Items.Add($miPin) | Out-Null
 $menu.Items.Add($miRestart) | Out-Null
 $menu.Items.Add((New-Object System.Windows.Forms.ToolStripSeparator)) | Out-Null
 $menu.Items.Add($miExit) | Out-Null
 $script:tray.ContextMenuStrip = $menu
 
+$miQr.Add_Click({ Show-Qr })
 $miPin.Add_Click({ Show-Pin })
 $miRestart.Add_Click({
     Stop-NodeService
@@ -152,7 +177,7 @@ $miExit.Add_Click({
     $script:tray.Dispose()
     [System.Windows.Forms.Application]::Exit()
 })
-$script:tray.Add_DoubleClick({ Show-Pin })
+$script:tray.Add_DoubleClick({ Show-Qr })
 
 # start service
 $st = Start-NodeService

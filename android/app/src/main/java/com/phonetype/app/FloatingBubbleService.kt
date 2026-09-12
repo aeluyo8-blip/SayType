@@ -473,10 +473,20 @@ class FloatingBubbleService : Service() {
                 WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH,
             PixelFormat.TRANSLUCENT
         ).apply {
-            gravity = Gravity.BOTTOM
+            // 靠上中部，避免贴在屏幕最底
+            gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
             softInputMode = WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
-            y = (12 * density).toInt()
-            x = (12 * density).toInt()
+            y = (88 * density).toInt()
+        }
+
+        // 点击面板外任意处 → 收起
+        root.setOnTouchListener { _, event ->
+            if (event.actionMasked == MotionEvent.ACTION_OUTSIDE) {
+                closePanel()
+                true
+            } else {
+                false
+            }
         }
 
         wm.addView(root, params)

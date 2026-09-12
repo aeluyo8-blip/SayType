@@ -150,13 +150,16 @@ server.listen(PORT, HOST, async () => {
   console.log('  connect from the Android app, send.');
   console.log('========================================');
 
-  // 后台模式：供启动脚本/「显示 PIN」读取，不打印用户输入正文
+  // 后台模式：供启动脚本/托盘读取，不打印用户输入正文
   const statusFile = process.env.PHONE_TYPE_STATUS_FILE;
   if (statusFile) {
     try {
       const { writeFileSync, mkdirSync } = await import('node:fs');
-      const { dirname } = await import('node:path');
+      const { dirname, join } = await import('node:path');
       mkdirSync(dirname(statusFile), { recursive: true });
+      const configUri = addrs.length
+        ? `phonetype://${addrs[0]}:${PORT}?pin=${PIN}`
+        : '';
       writeFileSync(
         statusFile,
         JSON.stringify(
@@ -165,6 +168,7 @@ server.listen(PORT, HOST, async () => {
             port: PORT,
             pin: PIN,
             addrs,
+            configUri,
             startedAt: new Date().toISOString(),
           },
           null,
@@ -172,6 +176,14 @@ server.listen(PORT, HOST, async () => {
         ),
         'utf8'
       );
+      if (configUri) {
+        const qrPath = join(dirname(statusFile), 'config-qr.png');
+        await QRCode.toFile(qrPath, configUri, {
+          width: 320,
+          margin: 2,
+          color: { dark: '#101828', light: '#FFFFFF' },
+        });
+      }
     } catch (e) {
       console.error(`status file write failed: ${e.message}`);
     }

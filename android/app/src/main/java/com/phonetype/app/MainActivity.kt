@@ -96,6 +96,14 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        // 避免内容顶到状态栏 / 底部手势条
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(
+            findViewById(android.R.id.content)
+        ) { v, insets ->
+            val bars = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars())
+            v.setPadding(0, bars.top, 0, bars.bottom)
+            insets
+        }
         container = findViewById(R.id.container)
         bottomNav = findViewById(R.id.bottomNav)
         AppBus.addStatusListener(busStatus)
