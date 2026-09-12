@@ -1,4 +1,4 @@
 @echo off
 chcp 65001 >nul
 cd /d "%~dp0"
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\start-service.ps1"
+powershell -NoProfile -STA -ExecutionPolicy Bypass -File "%~dp0scripts\saytype-tray.ps1"

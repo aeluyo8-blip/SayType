@@ -1,56 +1,140 @@
-﻿# phone-type 服务启动脚本（小白版入口，由 启动服务.bat 调用）
+﻿# SayType service launcher
 $ErrorActionPreference = 'Continue'
 $Root = Split-Path -Parent $PSScriptRoot
 Set-Location -LiteralPath $Root
+$Port = 8787
+$StatusFile = Join-Path $Root 'runtime\status.json'
+$LogFile = Join-Path $Root 'runtime\server.log'
 
-Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "  phone-type 服务" -ForegroundColor Cyan
-Write-Host "========================================" -ForegroundColor Cyan
-Write-Host ""
+function Write-Banner {
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host "  SayType service" -ForegroundColor Cyan
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host ""
+}
 
-# 1. 检测 Node.js
+function Test-PortListening {
+    param([int]$PortNum)
+    $lines = netstat -ano | Select-String ":$PortNum\s.*LISTENING"
+    if (-not $lines) { return $null }
+    $line = $lines | Select-Object -First 1
+    if ($line -match 'LISTENING\s+(\d+)') {
+        return [int]$Matches[1]
+    }
+    return $null
+}
+
+function Show-PinPopup {
+    param([string]$Pin, [object]$Addrs)
+    $lines = @()
+    if ($Addrs) {
+        foreach ($a in $Addrs) { $lines += ("ws://{0}:{1}" -f $a, $Port) }
+    } else {
+        $lines += "(no LAN IP)"
+    }
+    $addrText = $lines -join [Environment]::NewLine
+    $msg = "SayType is running in background." + [Environment]::NewLine + [Environment]::NewLine + "PIN:" + [Environment]::NewLine + $Pin + [Environment]::NewLine + [Environment]::NewLine + "Address:" + [Environment]::NewLine + $addrText + [Environment]::NewLine + [Environment]::NewLine + "Stop: double-click stop-service.bat" + [Environment]::NewLine + "Show PIN again: double-click show-pin.bat"
+    $b64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($msg))
+    $script = "Add-Type -AssemblyName PresentationFramework; `$m=[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('$b64')); [void][System.Windows.MessageBox]::Show(`$m,'SayType','OK','Information')"
+    Start-Process powershell -WindowStyle Hidden -ArgumentList '-NoProfile','-STA','-Command',$script | Out-Null
+}
+
+Write-Banner
+
 if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
-    Write-Host "[!] 没有检测到 Node.js（需要 Node 20 或更高版本）" -ForegroundColor Yellow
-    Write-Host "[i] 正在为你打开下载页面，安装完成后重新双击 启动服务.bat 即可"
+    Write-Host "[!] Node.js not found (need Node 20+)" -ForegroundColor Yellow
+    Write-Host "[i] Opening download page..."
     Start-Process "https://nodejs.org/zh-cn/download"
-    Read-Host "按回车键关闭窗口"
+    Read-Host "Press Enter to close"
     exit 1
 }
 
-# 2. 首次运行自动安装依赖
 if (-not (Test-Path "node_modules\ws")) {
-    Write-Host "[..] 首次运行，正在安装依赖（几秒钟）..."
+    Write-Host "[..] First run, installing deps..."
     npm install --no-audit --no-fund
     if ($LASTEXITCODE -ne 0) {
-        Write-Host "[!] 依赖安装失败，请检查网络后重试" -ForegroundColor Red
-        Read-Host "按回车键关闭窗口"
+        Write-Host "[!] npm install failed" -ForegroundColor Red
+        Read-Host "Press Enter to close"
         exit 1
     }
-    Write-Host "[+] 依赖安装完成"
+    Write-Host "[+] deps ready"
     Write-Host ""
 }
 
-# 3. 防火墙自检：手机能否连上的关键，没放行就自动提权添加
 $ruleOutput = netsh advfirewall firewall show rule name="phone-type-8787" 2>$null | Out-String
 if ($ruleOutput -notmatch 'phone-type-8787') {
-    Write-Host "[i] 首次运行需要放行防火墙，请在弹出的窗口点【是】..."
-    $proc = Start-Process powershell -Verb RunAs -PassThru -WindowStyle Hidden -ArgumentList `
-        '-NoProfile', '-Command', "netsh advfirewall firewall add rule name='phone-type-8787' dir=in action=allow protocol=TCP localport=8787"
+    Write-Host "[i] Need firewall allow for 8787, click Yes in UAC dialog..."
+    $proc = Start-Process powershell -Verb RunAs -PassThru -WindowStyle Hidden -ArgumentList '-NoProfile','-Command',"netsh advfirewall firewall add rule name='phone-type-8787' dir=in action=allow protocol=TCP localport=8787"
     $proc.WaitForExit()
     if ($proc.ExitCode -eq 0) {
-        Write-Host "[+] 防火墙已放行 8787 端口" -ForegroundColor Green
+        Write-Host "[+] firewall 8787 allowed" -ForegroundColor Green
     } else {
-        Write-Host "[i] 未放行防火墙。如果手机一直连不上，请右键 启动服务.bat 选择【以管理员身份运行】一次" -ForegroundColor Yellow
+        Write-Host "[i] firewall not allowed; try run bat as admin if phone cannot connect" -ForegroundColor Yellow
     }
     Write-Host ""
 }
 
-# 4. 启动服务：控制台显示的 PIN 就是手机要填的 6 位数字
-Write-Host "正在启动服务。下方显示的 PIN 就是手机上要填的 6 位数字。" -ForegroundColor Cyan
-Write-Host "停止服务：按 Ctrl+C 或直接关闭本窗口。" -ForegroundColor DarkGray
-Write-Host ""
-node server\index.mjs
+$oldPid = Test-PortListening -PortNum $Port
+if ($oldPid) {
+    try {
+        $oldProc = Get-Process -Id $oldPid -ErrorAction Stop
+        $name = $oldProc.ProcessName
+    } catch {
+        $name = "unknown"
+    }
+    Write-Host "Port $Port is used by $name (PID $oldPid)" -ForegroundColor Yellow
+    $ans = Read-Host "Kill it and start new service? [Y/N]"
+    if ($ans -match '^[Yy]') {
+        taskkill /PID $oldPid /F 2>$null | Out-Null
+        Start-Sleep -Milliseconds 400
+        $still = Test-PortListening -PortNum $Port
+        if ($still) {
+            Write-Host "[!] Failed to kill PID $still" -ForegroundColor Red
+            Read-Host "Press Enter to close"
+            exit 1
+        }
+        Write-Host "[+] old process killed" -ForegroundColor Green
+    } else {
+        Write-Host "[i] new service not started (old one still running)"
+        Read-Host "Press Enter to close"
+        exit 0
+    }
+}
 
+New-Item -ItemType Directory -Force -Path (Join-Path $Root 'runtime') | Out-Null
+Remove-Item $StatusFile -ErrorAction SilentlyContinue
+
+Write-Host "[..] starting service in background (no black window)..."
+$env:PHONE_TYPE_STATUS_FILE = $StatusFile
+$null = Start-Process -FilePath "node" -ArgumentList "server/index.mjs" -WorkingDirectory $Root -WindowStyle Hidden -PassThru -RedirectStandardOutput $LogFile -RedirectStandardError (Join-Path $Root 'runtime\server.err.log')
+
+$deadline = (Get-Date).AddSeconds(5)
+$status = $null
+while ((Get-Date) -lt $deadline) {
+    if (Test-Path $StatusFile) {
+        try {
+            $status = Get-Content $StatusFile -Raw | ConvertFrom-Json
+            if ($status.pin) { break }
+        } catch { }
+    }
+    Start-Sleep -Milliseconds 200
+}
+
+if (-not $status -or -not $status.pin) {
+    Write-Host "[!] start failed, see runtime\server.log and server.err.log" -ForegroundColor Red
+    Read-Host "Press Enter to close"
+    exit 1
+}
+
+Write-Host "[+] running in background (PID $($status.pid))" -ForegroundColor Green
+Write-Host "    PIN: $($status.pin)"
+Write-Host "    stop: stop-service.bat | show PIN: show-pin.bat"
 Write-Host ""
-Write-Host "服务已退出，按回车键关闭窗口"
-Read-Host
+
+if ($env:PHONE_TYPE_NO_POPUP -ne '1') {
+    Show-PinPopup -Pin $status.pin -Addrs $status.addrs
+}
+
+Write-Host "closing in 3s..."
+Start-Sleep -Seconds 3
+exit 0

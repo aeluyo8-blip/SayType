@@ -150,6 +150,33 @@ server.listen(PORT, HOST, async () => {
   console.log('  connect from the Android app, send.');
   console.log('========================================');
 
+  // 后台模式：供启动脚本/「显示 PIN」读取，不打印用户输入正文
+  const statusFile = process.env.PHONE_TYPE_STATUS_FILE;
+  if (statusFile) {
+    try {
+      const { writeFileSync, mkdirSync } = await import('node:fs');
+      const { dirname } = await import('node:path');
+      mkdirSync(dirname(statusFile), { recursive: true });
+      writeFileSync(
+        statusFile,
+        JSON.stringify(
+          {
+            pid: process.pid,
+            port: PORT,
+            pin: PIN,
+            addrs,
+            startedAt: new Date().toISOString(),
+          },
+          null,
+          2
+        ),
+        'utf8'
+      );
+    } catch (e) {
+      console.error(`status file write failed: ${e.message}`);
+    }
+  }
+
   // 手机 APP 扫这个二维码即可自动填好 IP/端口/PIN
   if (addrs.length) {
     const configUri = `phonetype://${addrs[0]}:${PORT}?pin=${PIN}`;
