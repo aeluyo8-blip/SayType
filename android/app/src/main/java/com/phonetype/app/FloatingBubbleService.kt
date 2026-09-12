@@ -432,14 +432,21 @@ class FloatingBubbleService : Service() {
         hideBubbleForPanel()
 
         val themed = ContextThemeWrapper(this, R.style.Theme_PhoneType)
-        val root = LayoutInflater.from(themed).inflate(R.layout.view_input_panel, null)
-        val input = root.findViewById<EditText>(R.id.inputText)
-        val status = root.findViewById<TextView>(R.id.statusText)
-        status.text = if (AppBus.isConnected) "已连接" else "未连接"
+        // 全屏 scrim + 面板：第一次点外部只收起，不把点击传给底层 App
+        val host = LayoutInflater.from(themed).inflate(R.layout.view_panel_host, null)
+        val card = host.findViewById<View>(R.id.panelCard) ?: host
+        val input = card.findViewById<EditText>(R.id.inputText)
+        val status = card.findViewById<TextView>(R.id.statusText)
+        status.text = if (AppBus.isConnected) getString(R.string.connected) else getString(R.string.not_connected)
 
-        root.findViewById<View>(R.id.btnClose).setOnClickListener { closePanel() }
-        root.findViewById<View>(R.id.btnClear).setOnClickListener { input.setText("") }
-        root.findViewById<View>(R.id.btnNote).setOnClickListener {
+        // scrim 点击 = 关面板；不往子 View 传
+        host.setOnClickListener { closePanel() }
+        // 面板本体消费点击，避免穿透 scrim
+        card.setOnClickListener { /* consume */ }
+
+        card.findViewById<View>(R.id.btnClose).setOnClickListener { closePanel() }
+        card.findViewById<View>(R.id.btnClear).setOnClickListener { input.setText("") }
+        card.findViewById<View>(R.id.btnNote).setOnClickListener {
             val text = input.text?.toString()?.trim().orEmpty()
             if (text.isEmpty()) {
                 Toast.makeText(this, R.string.hint_first, Toast.LENGTH_SHORT).show()
@@ -448,7 +455,7 @@ class FloatingBubbleService : Service() {
             HistoryStore.add(this, HistoryStore.Kind.NOTE, text)
             Toast.makeText(this, R.string.note_saved, Toast.LENGTH_SHORT).show()
         }
-        root.findViewById<View>(R.id.btnSend).setOnClickListener {
+        card.findViewById<View>(R.id.btnSend).setOnClickListener {
             val text = input.text?.toString()?.trim().orEmpty()
             if (text.isEmpty()) {
                 Toast.makeText(this, R.string.hint_first, Toast.LENGTH_SHORT).show()
@@ -467,30 +474,26 @@ class FloatingBubbleService : Service() {
 
         val params = WindowManager.LayoutParams(
             WindowManager.LayoutParams.MATCH_PARENT,
-            WindowManager.LayoutParams.WRAP_CONTENT,
+            WindowManager.LayoutParams.MATCH_PARENT,
             overlayType(),
-            WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
-                WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH,
+            // 不加 FLAG_NOT_TOUCH_MODAL：整窗吃点击，避免穿透
+            WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
             PixelFormat.TRANSLUCENT
         ).apply {
-            // 靠上中部，避免贴在屏幕最底
-            gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
+            gravity = Gravity.TOP or Gravity.START
             softInputMode = WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
-            y = (88 * density).toInt()
         }
 
-        // 点击面板外任意处 → 收起
-        root.setOnTouchListener { _, event ->
-            if (event.actionMasked == MotionEvent.ACTION_OUTSIDE) {
-                closePanel()
-                true
-            } else {
-                false
-            }
-        }
+        // 把面板内容顶到上中部（原布局 padding 基础上再抬高）
+        card.setPadding(
+            card.paddingLeft,
+            (88 * density).toInt(),
+            card.paddingRight,
+            card.paddingBottom
+        )
 
-        wm.addView(root, params)
-        panelView = root
+        wm.addView(host, params)
+        panelView = host
         input.requestFocus()
     }
 
@@ -501,7 +504,9 @@ class FloatingBubbleService : Service() {
     }
 
     private fun updatePanelStatus(s: String) {
-        panelView?.findViewById<TextView>(R.id.statusText)?.text = s
+        val host = panelView ?: return
+        val card = host.findViewById<View>(R.id.panelCard) ?: host
+        card.findViewById<TextView>(R.id.statusText)?.text = s
     }
 
     private fun removeOverlay(v: View?) {

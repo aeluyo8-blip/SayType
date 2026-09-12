@@ -63,6 +63,25 @@ object HistoryStore {
         write(c, kept)
     }
 
+    /** 纯文本导出，便于分享 / 存盘 */
+    fun exportText(c: Context, kind: Kind): String {
+        val fmt = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.getDefault())
+        val items = list(c, kind)
+        if (items.isEmpty()) return ""
+        val title = if (kind == Kind.SENT) "SayType 发送记录" else "SayType 笔记"
+        return buildString {
+            appendLine("# $title")
+            appendLine("# exported ${fmt.format(java.util.Date())} · ${items.size} items")
+            appendLine()
+            items.forEach { e ->
+                val mark = if (e.ok) "OK" else "FAIL"
+                appendLine("[${fmt.format(java.util.Date(e.atMs))}] $mark")
+                appendLine(e.text)
+                appendLine()
+            }
+        }
+    }
+
     private fun readAll(c: Context): JSONArray {
         val f = file(c)
         if (!f.exists()) return JSONArray()
