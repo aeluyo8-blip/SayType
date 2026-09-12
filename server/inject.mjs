@@ -2,6 +2,10 @@ import { spawn } from 'node:child_process';
 import { randomInt } from 'node:crypto';
 import os from 'node:os';
 
+// A stuck powershell (clipboard locked by another app, STA hang) must not
+// block the inject queue forever, so every spawn gets a hard timeout.
+const PS_TIMEOUT_MS = Number(process.env.PHONE_TYPE_PS_TIMEOUT || 5000);
+
 function runPs(script) {
   return new Promise((resolve, reject) => {
     const child = spawn(
@@ -15,16 +19,31 @@ function runPs(script) {
     );
     let out = '';
     let err = '';
+    let settled = false;
+    const finish = (fn) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      fn();
+    };
+    const timer = setTimeout(() => {
+      finish(() => {
+        child.kill();
+        reject(Object.assign(new Error(`powershell timeout after ${PS_TIMEOUT_MS}ms`), { code: 'inject_failed' }));
+      });
+    }, PS_TIMEOUT_MS);
     child.stdout.on('data', (d) => {
       out += d.toString();
     });
     child.stderr.on('data', (d) => {
       err += d.toString();
     });
-    child.on('error', reject);
+    child.on('error', (e) => finish(() => reject(e)));
     child.on('close', (code) => {
-      if (code === 0) resolve(out.trim());
-      else reject(new Error(err.trim() || out.trim() || `powershell exit ${code}`));
+      finish(() => {
+        if (code === 0) resolve(out.trim());
+        else reject(new Error(err.trim() || out.trim() || `powershell exit ${code}`));
+      });
     });
   });
 }
@@ -49,7 +68,12 @@ $ErrorActionPreference = 'Stop'
 $bytes = [System.Convert]::FromBase64String('${b64}')
 $text = [System.Text.Encoding]::UTF8.GetString($bytes)
 Add-Type -AssemblyName System.Windows.Forms
-[System.Windows.Forms.Clipboard]::SetText($text)
+$ok = $false
+for ($i = 0; $i -lt 3 -and -not $ok; $i++) {
+  try { [System.Windows.Forms.Clipboard]::SetText($text); $ok = $true }
+  catch { Start-Sleep -Milliseconds 120 }
+}
+if (-not $ok) { throw 'clipboard busy' }
 Start-Sleep -Milliseconds 40
 [System.Windows.Forms.SendKeys]::SendWait('^v')
 Write-Output 'OK'
@@ -67,7 +91,8 @@ export function listLanIPv4() {
   const addrs = [];
   for (const list of Object.values(nets)) {
     for (const ni of list || []) {
-      if (ni.family === 'IPv4' && !ni.internal) {
+      // 169.254.* 是未联网时的链路本地地址，小白拿到手也连不通，直接过滤
+      if (ni.family === 'IPv4' && !ni.internal && !ni.address.startsWith('169.254.')) {
         addrs.push(ni.address);
       }
     }

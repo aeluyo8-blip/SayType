@@ -1,20 +1,81 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">phone-type</string>
-    <string name="subtitle">手机说话成字，一键打到电脑光标处（需同一局域网）</string>
+    <string name="app_name">SayType</string>
+    <string name="tagline">Speak here. Type there.</string>
+
+    <string name="not_connected">未连接</string>
+    <string name="connected">已连接</string>
+    <string name="same_wifi">同一 WiFi</string>
+
+    <string name="perm_banner">需要先授予「悬浮窗权限」，才能在其他 App 上输入</string>
+    <string name="perm_go">去开启</string>
+
+    <string name="pair_title">三步完成配对</string>
+    <string name="step_pc_t">电脑启动服务</string>
+    <string name="step_pc_d">双击 启动服务.bat，窗口会显示二维码和 PIN</string>
+    <string name="step_scan_t">手机扫码</string>
+    <string name="step_scan_d">IP、端口、PIN 自动填好，无需手动输入</string>
+    <string name="step_auto_t">自动连接</string>
+    <string name="step_auto_d">手机与电脑在同一 WiFi 下即可，延迟通常几十毫秒</string>
+
+    <string name="btn_scan_pair">扫码配对</string>
+    <string name="manual_summary">无法扫码？手动输入</string>
     <string name="label_host">PC 局域网 IP</string>
-    <string name="hint_host">192.168.x.x</string>
     <string name="label_port">端口</string>
-    <string name="hint_port">8787</string>
-    <string name="label_pin">PIN（PC 控制台显示）</string>
-    <string name="hint_pin">6 位数字</string>
-    <string name="btn_overlay_perm">1. 授予悬浮窗权限</string>
-    <string name="btn_save">2. 保存配置</string>
-    <string name="btn_start_bubble">3. 启动悬浮球</string>
-    <string name="btn_connect">4. 连接 PC</string>
-    <string name="btn_stop">停止悬浮球</string>
-    <string name="btn_send">发送到电脑</string>
+    <string name="label_pin">PIN（电脑控制台显示）</string>
+    <string name="btn_save_connect">保存并连接</string>
+    <string name="privacy_hint">只传文字，不传音频；服务仅监听局域网，PIN 每次启动随机生成</string>
+
+    <string name="tab_home">首页</string>
+    <string name="tab_history">记录</string>
+    <string name="tab_settings">设置</string>
+
+    <string name="latency">当前延迟</string>
+    <string name="ball_label">悬浮球</string>
+    <string name="ball_running">运行中 · 在任意 App 上点它输入</string>
+    <string name="ball_stopped">已关闭</string>
+    <string name="panel_preview">输入面板预览</string>
+    <string name="panel_preview_sub">体验点球 → 输入 → 发送到电脑的完整流程</string>
+    <string name="recent_sends">最近发送</string>
+    <string name="view_all_history">查看全部记录</string>
+    <string name="repair_pair">重新配对 / 修改配置</string>
+
+    <string name="history_title">记录</string>
+    <string name="seg_sent">发送记录</string>
+    <string name="seg_notes">我的笔记</string>
     <string name="btn_clear">清空</string>
+    <string name="empty_sent">还没有发送记录</string>
+    <string name="empty_notes">还没有笔记</string>
+
+    <string name="settings_title">设置</string>
+    <string name="sec_connection">连接</string>
+    <string name="sec_ball">悬浮球</string>
+    <string name="sec_about">关于</string>
+    <string name="repair_pair_title">重新配对</string>
+    <string name="repair_pair_sub">扫码连接另一台电脑</string>
+    <string name="auto_dock">无操作自动贴边</string>
+    <string name="auto_dock_sub">约 2 秒无操作后收缩到屏幕边缘</string>
+    <string name="clear_after">发送后清空输入框</string>
+    <string name="about_privacy">隐私</string>
+    <string name="about_privacy_sub">只传文字不传音频，服务仅监听局域网</string>
+
+    <string name="scan_title">扫码配对</string>
+    <string name="scan_hint">对准电脑服务窗口中的二维码\nIP、端口、PIN 将自动填入</string>
+    <string name="scan_prompt">对准电脑启动窗口里的二维码</string>
+    <string name="scan_scanning">正在识别…</string>
+
     <string name="btn_close">收起</string>
-    <string name="hint_input">在这里用语音输入法说话…</string>
+    <string name="btn_send">发送到电脑</string>
+    <string name="btn_note">存笔记</string>
+    <string name="hint_input">在这里输入文字…</string>
+    <string name="hint_first">先输入文字</string>
+    <string name="sent_ok">已发送</string>
+    <string name="note_saved">已存笔记</string>
+    <string name="need_overlay">请先授予悬浮窗权限</string>
+    <string name="bubble_started">悬浮球已启动</string>
+    <string name="bubble_stopped">已停止悬浮球</string>
+    <string name="imported">已导入配置，正在连接…</string>
+    <string name="invalid_qr">无法识别的二维码，请手动填写</string>
+    <string name="not_connected_send">未连接，无法发送</string>
+    <string name="connect_first">未连接，请先配对</string>
 </resources>

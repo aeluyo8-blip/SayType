@@ -1,5 +1,7 @@
 package com.phonetype.app
 
+import android.os.Handler
+import android.os.Looper
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -15,6 +17,8 @@ import java.util.concurrent.atomic.AtomicReference
  * Minimal WebSocket client for the phone-type PC service.
  * Protocol: hello+pin → welcome; then text → ack/error.
  * Generation token prevents a stale socket from wiping a newer session.
+ * Auto-reconnect with exponential backoff (1s→2s→4s→8s→16s, cap 30s);
+ * disabled by user disconnect or a bad_pin rejection.
  */
 class WsManager(
     private val onStatus: (String) -> Unit,
@@ -28,6 +32,13 @@ class WsManager(
     private val wsRef = AtomicReference<WebSocket?>(null)
     private val authed = AtomicBoolean(false)
     private val generation = AtomicInteger(0)
+    private val autoReconnect = AtomicBoolean(false)
+    private val reconnectAttempts = AtomicInteger(0)
+    private val reconnectHandler = Handler(Looper.getMainLooper())
+
+    private var lastHost = ""
+    private var lastPort = 0
+    private var lastPin = ""
 
     fun isConnected(): Boolean = wsRef.get() != null && authed.get()
 
@@ -37,9 +48,38 @@ class WsManager(
             onStatus("请填写 IP 和 PIN")
             return
         }
+        lastHost = host
+        lastPort = port
+        lastPin = pin
+        autoReconnect.set(true)
+        dial()
+    }
+
+    fun sendText(text: String, seq: Int): Boolean {
+        val ws = wsRef.get() ?: return false
+        if (!authed.get()) return false
+        val payload = JSONObject()
+            .put("type", "text")
+            .put("text", text)
+            .put("seq", seq)
+            .toString()
+        return ws.send(payload)
+    }
+
+    fun disconnect() {
+        autoReconnect.set(false)
+        reconnectHandler.removeCallbacksAndMessages(null)
+        reconnectAttempts.set(0)
+        generation.incrementAndGet()
+        authed.set(false)
+        wsRef.getAndSet(null)?.close(1000, "bye")
+    }
+
+    private fun dial() {
         val gen = generation.incrementAndGet()
-        onStatus("连接中…")
-        val req = Request.Builder().url("ws://$host:$port").build()
+        val failures = reconnectAttempts.get()
+        onStatus(if (failures == 0) "连接中…" else "重连中(第${failures + 1}次)…")
+        val req = Request.Builder().url("ws://$lastHost:$lastPort").build()
         val ws = client.newWebSocket(req, object : WebSocketListener() {
             private fun isCurrent(): Boolean = generation.get() == gen
 
@@ -49,7 +89,7 @@ class WsManager(
                     return
                 }
                 wsRef.set(webSocket)
-                webSocket.send(JSONObject().put("type", "hello").put("pin", pin).toString())
+                webSocket.send(JSONObject().put("type", "hello").put("pin", lastPin).toString())
             }
 
             override fun onMessage(webSocket: WebSocket, text: String) {
@@ -65,32 +105,26 @@ class WsManager(
                 if (!isCurrent()) return
                 cleanupIfSame(webSocket)
                 onStatus("已断开 ($code)")
+                scheduleReconnect()
             }
 
             override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
                 if (!isCurrent()) return
                 cleanupIfSame(webSocket)
                 onStatus("连接失败: ${t.message ?: "unknown"}")
+                scheduleReconnect()
             }
         })
         wsRef.set(ws)
     }
 
-    fun sendText(text: String, seq: Int): Boolean {
-        val ws = wsRef.get() ?: return false
-        if (!authed.get()) return false
-        val payload = JSONObject()
-            .put("type", "text")
-            .put("text", text)
-            .put("seq", seq)
-            .toString()
-        return ws.send(payload)
-    }
-
-    fun disconnect() {
-        generation.incrementAndGet()
-        authed.set(false)
-        wsRef.getAndSet(null)?.close(1000, "bye")
+    private fun scheduleReconnect() {
+        if (!autoReconnect.get()) return
+        val attempt = reconnectAttempts.incrementAndGet()
+        val delayMs = (1000L shl (attempt - 1).coerceAtMost(5)).coerceAtMost(30_000L)
+        reconnectHandler.postDelayed({
+            if (autoReconnect.get()) dial()
+        }, delayMs)
     }
 
     private fun cleanupIfSame(webSocket: WebSocket) {
@@ -110,6 +144,7 @@ class WsManager(
         when (msg.optString("type")) {
             "welcome" -> {
                 authed.set(true)
+                reconnectAttempts.set(0)
                 onStatus("已连接")
             }
             "ack" -> {

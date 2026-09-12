@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 冰透玻璃 S 悬浮球：直接使用抠好的品牌图 -->
+<ImageView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/ballRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:contentDescription="@string/app_name"
+    android:scaleType="fitCenter"
+    android:src="@drawable/ic_ball_s_photo" />

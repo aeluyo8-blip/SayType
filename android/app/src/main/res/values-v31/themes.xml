@@ -1,24 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- SayType brand — 禁用动态取色，保证与原型一致 -->
-    <color name="brand_blue">#2E6BFF</color>
-    <color name="brand_blue_press">#1F56DB</color>
-    <color name="brand_blue_soft">#EAF0FF</color>
-    <color name="bg">#F4F6F9</color>
-    <color name="card">#FFFFFF</color>
-    <color name="ink">#101828</color>
-    <color name="ink_2">#475467</color>
-    <color name="ink_3">#98A2B3</color>
-    <color name="line">#E8ECF1</color>
-    <color name="ok">#12B76A</color>
-    <color name="ok_soft">#E7F8F0</color>
-    <color name="warn">#F79009</color>
-    <color name="warn_soft">#FEF3E4</color>
-    <color name="err">#F04438</color>
-    <color name="ball_face">#F3F8FD</color>
-    <color name="ball_edge">#FFFFFF</color>
-    <color name="ball_glyph">#7A96B8</color>
-
+    <!-- 与 values/themes.xml 保持一致；禁用动态取色 -->
     <style name="Theme.PhoneType" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="colorPrimary">@color/brand_blue</item>
         <item name="colorOnPrimary">@android:color/white</item>

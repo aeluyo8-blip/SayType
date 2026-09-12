@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 贴边椭圆态玻璃球 -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="oval">
+            <gradient
+                android:type="radial"
+                android:gradientRadius="40dp"
+                android:centerX="30%"
+                android:centerY="20%"
+                android:startColor="#FFFFFF"
+                android:centerColor="#F0F6FC"
+                android:endColor="#D6E4F5" />
+            <stroke android:width="1dp" android:color="#FFFFFF" />
+        </shape>
+    </item>
+</layer-list>

@@ -1,5 +1,6 @@
 import http from 'node:http';
 import { WebSocketServer } from 'ws';
+import QRCode from 'qrcode';
 import { injectText, listLanIPv4, randomPin } from './inject.mjs';
 
 const PORT = Number(process.env.PHONE_TYPE_PORT || 8787);
@@ -11,7 +12,33 @@ const server = http.createServer((_req, res) => {
   res.end('phone-type PC service. Use WebSocket.\n');
 });
 
+// Register before WebSocketServer: ws's own 'error' listener throws first and
+// breaks the emit chain, so a late handler never sees EADDRINUSE.
+server.on('error', (e) => {
+  if (e.code === 'EADDRINUSE') {
+    console.error(`端口 ${PORT} 已被占用：可能已有一个 phone-type 在运行，或用 PHONE_TYPE_PORT=xxxx 换端口。`);
+    process.exit(1);
+  }
+  console.error(`server error: ${e.message}`);
+  process.exit(1);
+});
+
 const wss = new WebSocketServer({ server });
+
+// Heartbeat: phones vanishing behind NAT / killed apps leave half-open TCP
+// connections that never emit 'close'. Ping every 30s, terminate on 2 misses.
+const HEARTBEAT_MS = Number(process.env.PHONE_TYPE_HEARTBEAT_MS || 30000);
+const heartbeatTimer = setInterval(() => {
+  for (const ws of wss.clients) {
+    if (ws.isAlive === false) {
+      log('dead connection terminated');
+      ws.terminate();
+      continue;
+    }
+    ws.isAlive = false;
+    ws.ping();
+  }
+}, HEARTBEAT_MS);
 
 // Serialize clipboard+Ctrl+V so concurrent text frames cannot interleave.
 let injectChain = Promise.resolve();
@@ -38,6 +65,10 @@ function log(msg) {
 wss.on('connection', (ws, req) => {
   const ip = req.socket.remoteAddress || '?';
   let authed = false;
+  ws.isAlive = true;
+  ws.on('pong', () => {
+    ws.isAlive = true;
+  });
 
   log(`client connected ${ip}`);
 
@@ -101,7 +132,7 @@ wss.on('connection', (ws, req) => {
   ws.on('error', () => log(`client error ${ip}`));
 });
 
-server.listen(PORT, HOST, () => {
+server.listen(PORT, HOST, async () => {
   const addrs = listLanIPv4();
   console.log('========================================');
   console.log('  phone-type PC service');
@@ -118,13 +149,36 @@ server.listen(PORT, HOST, () => {
   console.log('  Focus a text field on Windows,');
   console.log('  connect from the Android app, send.');
   console.log('========================================');
+
+  // 手机 APP 扫这个二维码即可自动填好 IP/端口/PIN
+  if (addrs.length) {
+    const configUri = `phonetype://${addrs[0]}:${PORT}?pin=${PIN}`;
+    try {
+      const qr = await QRCode.toString(configUri, { type: 'terminal', small: true });
+      console.log('');
+      console.log('  用手机 APP 的「扫码配置」对准下面的二维码：');
+      console.log('');
+      console.log(qr);
+      console.log(`  （二维码内容：${configUri}）`);
+      if (addrs.length > 1) {
+        console.log(`  本机有多个网卡 IP，扫码连不上就改用手动填写：${addrs.join(', ')}`);
+      }
+    } catch (e) {
+      console.log(`  (二维码生成失败: ${e.message}，请手动填写 IP 和 PIN)`);
+    }
+  }
 });
 
 function shutdown() {
   log('shutting down');
+  clearInterval(heartbeatTimer);
   wss.close();
   server.close(() => process.exit(0));
   setTimeout(() => process.exit(0), 500).unref();
 }
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);
+
+// Keep the resident service alive on stray async errors; log and continue.
+process.on('uncaughtException', (e) => log(`uncaughtException ${e?.stack || e}`));
+process.on('unhandledRejection', (e) => log(`unhandledRejection ${e?.stack || e}`));
