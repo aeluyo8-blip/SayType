@@ -136,6 +136,17 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        ensureWs()
+        // 开关为开但 Service 已死（杀进程/划掉）→ 自动拉起
+        if (Prefs.ballEnabled(this) && Settings.canDrawOverlays(this)) {
+            val i = Intent(this, FloatingBubbleService::class.java)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) startForegroundService(i)
+            else startService(i)
+            if (Prefs.isPaired(this)) {
+                i.action = FloatingBubbleService.ACTION_CONNECT
+                startForegroundService(i)
+            }
+        }
         refreshAll()
     }
 

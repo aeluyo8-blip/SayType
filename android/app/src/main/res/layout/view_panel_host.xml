@@ -1,10 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 全屏透明 scrim：吃掉面板外第一次点击，不穿透到底层 App -->
+<!-- 全屏透明 scrim：吃掉面板外第一次点击；面板为居中偏上的圆角卡片 -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/panelScrimRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#660A0E1A">
+    android:background="#660A0E1A"
+    android:paddingLeft="12dp"
+    android:paddingRight="12dp"
+    android:paddingTop="72dp">
 
     <include
         android:id="@+id/panelCard"

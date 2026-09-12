@@ -19,6 +19,9 @@ object HistoryStore {
 
     private fun file(c: Context): File = File(c.filesDir, "history.json")
 
+    /** 发送记录保留上限；笔记不限 */
+    private const val SENT_KEEP = 200
+
     fun add(c: Context, kind: Kind, text: String, ok: Boolean = true) {
         val arr = readAll(c)
         val item = JSONObject()
@@ -28,7 +31,29 @@ object HistoryStore {
             .put("at", System.currentTimeMillis())
             .put("ok", ok)
         arr.put(item)
-        write(c, arr)
+        write(c, trimSent(arr))
+    }
+
+    /** 只裁 SENT，保留全部 NOTE（按插入序） */
+    private fun trimSent(arr: JSONArray): JSONArray {
+        var sentCount = 0
+        for (i in 0 until arr.length()) {
+            val o = arr.optJSONObject(i) ?: continue
+            if (o.optString("kind") != "note") sentCount++
+        }
+        if (sentCount <= SENT_KEEP) return arr
+        val kept = JSONArray()
+        var drop = sentCount - SENT_KEEP
+        for (i in 0 until arr.length()) {
+            val o = arr.optJSONObject(i) ?: continue
+            val isNote = o.optString("kind") == "note"
+            if (!isNote && drop > 0) {
+                drop--
+                continue
+            }
+            kept.put(o)
+        }
+        return kept
     }
 
     fun list(c: Context, kind: Kind, limit: Int = 200): List<Entry> {

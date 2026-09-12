@@ -182,6 +182,16 @@ function Stop-NodeService {
     Remove-Item $StatusFile -ErrorAction SilentlyContinue
 }
 
+# --- firewall (first run) ---
+$ruleOutput = netsh advfirewall firewall show rule name="phone-type-8787" 2>$null | Out-String
+if ($ruleOutput -notmatch 'phone-type-8787') {
+    try {
+        $proc = Start-Process powershell -Verb RunAs -PassThru -WindowStyle Hidden -ArgumentList `
+            '-NoProfile', '-Command', "netsh advfirewall firewall add rule name='phone-type-8787' dir=in action=allow protocol=TCP localport=8787"
+        $proc.WaitForExit()
+    } catch { }
+}
+
 # --- port occupied? ---
 $oldPid = Test-PortListening -PortNum $Port
 if ($oldPid) {
