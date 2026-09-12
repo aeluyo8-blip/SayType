@@ -84,9 +84,9 @@ class MainActivity : AppCompatActivity() {
         runOnUiThread {
             val label = when {
                 ok -> getString(R.string.sent_ok)
-                detail == "inject_failed" -> "电脑注入失败"
-                detail == "bad_pin" -> "PIN 错误"
-                else -> "发送失败: $detail"
+                detail == "inject_failed" -> getString(R.string.err_inject_failed)
+                detail == "bad_pin" -> getString(R.string.err_bad_pin)
+                else -> getString(R.string.err_send_fail, detail)
             }
             Toast.makeText(this, label, Toast.LENGTH_SHORT).show()
             refreshAll()
@@ -228,7 +228,7 @@ class MainActivity : AppCompatActivity() {
             val port = v.findViewById<EditText>(R.id.inputPort).text.toString().toIntOrNull() ?: 8787
             val pin = v.findViewById<EditText>(R.id.inputPin).text.toString().trim()
             if (host.isBlank() || pin.isBlank()) {
-                Toast.makeText(this, "请填写 IP 和 PIN", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, R.string.fill_ip_pin, Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
             Prefs.save(this, host, port, pin)
@@ -279,7 +279,7 @@ class MainActivity : AppCompatActivity() {
         clear.isChecked = Prefs.clearAfterSend(this)
         clear.setOnCheckedChangeListener { _, on -> Prefs.setClearAfterSend(this, on) }
         v.findViewById<TextView>(R.id.aboutVer).text =
-            "v" + (packageManager.getPackageInfo(packageName, 0).versionName ?: "0.3.0")
+            getString(R.string.about_ver_fmt, packageManager.getPackageInfo(packageName, 0).versionName ?: "")
     }
 
     private fun maskPin(pin: String): String = when {
@@ -339,7 +339,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun requestOverlay() {
         if (Settings.canDrawOverlays(this)) {
-            Toast.makeText(this, "已有悬浮窗权限", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, R.string.overlay_already, Toast.LENGTH_SHORT).show()
             return
         }
         overlayPerm.launch(
@@ -380,10 +380,11 @@ class MainActivity : AppCompatActivity() {
         chip.text = getString(if (on) R.string.connected else R.string.not_connected)
         chip.setTextColor(getColor(if (on) R.color.ok else R.color.ink_2))
         v.findViewById<TextView>(R.id.homePcName).text =
-            if (Prefs.host(this).isNotBlank()) "PC" else "—"
+            if (Prefs.host(this).isNotBlank()) getString(R.string.status_pc) else "—"
         val host = Prefs.host(this).ifBlank { "—" }
         val port = Prefs.port(this)
-        v.findViewById<TextView>(R.id.homeAddr).text = "$host:$port · ${getString(R.string.same_wifi)}"
+        v.findViewById<TextView>(R.id.homeAddr).text =
+            getString(R.string.addr_fmt, host, port.toString()) + " · " + getString(R.string.same_wifi)
         v.findViewById<TextView>(R.id.homeLatency).text = AppBus.lastRttMs?.let { "${it}ms" } ?: "—"
         val ballOn = Prefs.ballEnabled(this)
         v.findViewById<TextView>(R.id.ballStateText).text =
@@ -439,7 +440,8 @@ class MainActivity : AppCompatActivity() {
             items.forEach { e ->
                 val row = inflater.inflate(R.layout.item_history, list, false)
                 row.findViewById<TextView>(R.id.itemTime).text =
-                    if (e.ok) fmt.format(Date(e.atMs)) else "${fmt.format(Date(e.atMs))} · 失败"
+                    if (e.ok) fmt.format(Date(e.atMs))
+                    else fmt.format(Date(e.atMs)) + getString(R.string.hist_fail_suffix)
                 row.findViewById<TextView>(R.id.itemText).text = e.text
                 val dot = row.findViewById<View>(R.id.statusDot)
                 if (e.ok) {
@@ -490,8 +492,9 @@ class MainActivity : AppCompatActivity() {
         val host = Prefs.host(this).ifBlank { "—" }
         val port = Prefs.port(this)
         val pin = maskPin(Prefs.pin(this))
-        v.findViewById<TextView>(R.id.setPcName).text = "PC"
-        v.findViewById<TextView>(R.id.setAddr).text = "$host:$port · PIN $pin"
+        v.findViewById<TextView>(R.id.setPcName).text = getString(R.string.status_pc)
+        v.findViewById<TextView>(R.id.setAddr).text =
+            getString(R.string.addr_pin_fmt, host, port.toString(), pin)
         v.findViewById<MaterialSwitch>(R.id.switchAutoDock).isChecked = Prefs.autoDock(this)
         v.findViewById<MaterialSwitch>(R.id.switchClearAfter).isChecked = Prefs.clearAfterSend(this)
     }

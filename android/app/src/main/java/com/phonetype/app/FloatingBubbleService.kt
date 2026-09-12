@@ -60,9 +60,9 @@ class FloatingBubbleService : Service() {
             }
             val label = when {
                 ok -> getString(R.string.sent_ok)
-                detail == "inject_failed" -> "电脑注入失败"
-                detail == "bad_pin" -> "PIN 错误"
-                else -> "发送失败: $detail"
+                detail == "inject_failed" -> getString(R.string.err_inject_failed)
+                detail == "bad_pin" -> getString(R.string.err_bad_pin)
+                else -> getString(R.string.err_send_fail, detail)
             }
             updatePanelStatus(label)
         }
@@ -468,7 +468,7 @@ class FloatingBubbleService : Service() {
             }
             pendingText[seq] = text
             if (Prefs.clearAfterSend(this)) input.setText("")
-            status.text = "发送中…"
+            status.text = getString(R.string.sending)
         }
 
         val params = WindowManager.LayoutParams(
