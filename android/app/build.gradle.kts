@@ -11,8 +11,8 @@ android {
         applicationId = "com.phonetype.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 6
+        versionName = "0.3.0"
     }
 
     buildTypes {
@@ -39,4 +39,9 @@ dependencies {
     implementation("androidx.appcompat:appcompat:1.7.0")
     implementation("com.google.android.material:material:1.12.0")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.journeyapps:zxing-android-embedded:4.3.0") {
+        // zxing core 3.4+ 只在 java 8 目标下可用，embedded 库可正常降级使用
+        exclude(group = "com.google.zxing", module = "core")
+    }
+    implementation("com.google.zxing:core:3.5.3")
 }

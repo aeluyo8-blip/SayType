@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- 声波：语音输入意象，白色 glyph，由悬浮球渐变圆底承载 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M4,10a1,1 0 0,1 1,1v2a1,1 0 1,1 -2,0v-2a1,1 0 0,1 1,-1z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M8.5,6.5a1,1 0 0,1 1,1v9a1,1 0 1,1 -2,0v-9a1,1 0 0,1 1,-1z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M13,3.5a1,1 0 0,1 1,1v15a1,1 0 1,1 -2,0v-15a1,1 0 0,1 1,-1z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M17.5,7.5a1,1 0 0,1 1,1v7a1,1 0 1,1 -2,0v-7a1,1 0 0,1 1,-1z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M21,10.5a1,1 0 0,1 1,1v1a1,1 0 1,1 -2,0v-1a1,1 0 0,1 1,-1z" />
+</vector>
