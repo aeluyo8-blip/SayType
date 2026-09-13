@@ -1,15 +1,18 @@
 {
-  "name": "phone-type",
-  "version": "0.1.0",
+  "name": "saytype",
+  "version": "0.3.3",
   "private": true,
   "type": "module",
-  "description": "Phone keyboard text → Windows cursor via LAN WebSocket",
+  "description": "Phone keyboard/voice text → Windows cursor via LAN WebSocket",
+  "license": "MIT",
   "engines": {
     "node": ">=20"
   },
   "scripts": {
     "start": "node server/index.mjs",
-    "test": "node --test test/inject.unit.mjs"
+    "test": "node --test test/inject.unit.mjs",
+    "verify": "node scripts/verify-pc.mjs",
+    "dev-client": "node scripts/dev-client.mjs"
   },
   "dependencies": {
     "qrcode": "^1.5.4",

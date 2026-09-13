@@ -1,9 +1,14 @@
+"""Generate circular floating-ball PNGs into android drawable-nodpi.
+
+Usage:
+  python scripts/extract_ball_assets.py <source.png>
+"""
 from PIL import Image, ImageDraw, ImageFilter, ImageChops
 import os
+import sys
 
-OUT = r"D:\Workspace\phone-type\android\app\src\main\res\drawable-nodpi"
-os.makedirs(OUT, exist_ok=True)
-SRC = r"D:\下载\ChatGPT Image 2026年9月12日 09_29_15.png"
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+OUT = os.path.join(ROOT, "android", "app", "src", "main", "res", "drawable-nodpi")
 
 
 def circular_extract(src, out, size=512, radius_frac=0.28, feather=24):
@@ -12,25 +17,14 @@ def circular_extract(src, out, size=512, radius_frac=0.28, feather=24):
     w, h = im.size
     cx, cy = w // 2, h // 2
     r = int(min(w, h) * radius_frac)
-    # crop generous box
     box_r = r + feather + 8
     crop = im.crop((cx - box_r, cy - box_r, cx + box_r, cy + box_r))
     cw, ch = crop.size
-    # alpha: opaque inside radius, feather to 0
     mask = Image.new("L", (cw, ch), 0)
     d = ImageDraw.Draw(mask)
-    # hard core
     d.ellipse((cw / 2 - r, ch / 2 - r, cw / 2 + r, ch / 2 + r), fill=255)
-    # glow ring: slightly larger, lower alpha via second draw then blur
     mask = mask.filter(ImageFilter.GaussianBlur(radius=feather * 0.55))
-    # background is near-white; subtract by making very light pixels more transparent
-    # so white canvas doesn't show as white square on dark apps — the circle mask already does this
     crop.putalpha(ImageChops.multiply(crop.split()[3], mask))
-
-    # slight denoise of alpha
-    a = crop.split()[3]
-    crop.putalpha(a)
-
     crop.thumbnail((size, size), Image.Resampling.LANCZOS)
     canvas = Image.new("RGBA", (size, size), (0, 0, 0, 0))
     canvas.paste(crop, ((size - crop.width) // 2, (size - crop.height) // 2), crop)
@@ -55,7 +49,11 @@ def dock_from_full():
 
 
 if __name__ == "__main__":
-    # 球体实测直径约画布 42%，光晕再大一圈
-    circular_extract(SRC, os.path.join(OUT, "ic_ball_s_photo.png"), 512, radius_frac=0.215, feather=14)
+    if len(sys.argv) < 2:
+        print(__doc__)
+        sys.exit(1)
+    src = sys.argv[1]
+    os.makedirs(OUT, exist_ok=True)
+    circular_extract(src, os.path.join(OUT, "ic_ball_s_photo.png"), 512, radius_frac=0.215, feather=14)
     dock_from_full()
     print("ok")

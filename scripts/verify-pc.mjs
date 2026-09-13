@@ -20,7 +20,7 @@ const ROOT = path.join(__dirname, '..');
 const PIN = '246810';
 const PORT = 8790;
 const TEXT = `验证成功-中文注入-${Date.now()}`;
-const FILE = path.join(os.tmpdir(), `phone-type-verify-${Date.now()}.txt`);
+const FILE = path.join(os.tmpdir(), `SayType-verify-${Date.now()}.txt`);
 
 function ps(script) {
   return new Promise((resolve, reject) => {
@@ -82,7 +82,7 @@ if ($fg -eq $p.MainWindowHandle) { Write-Output 'FOCUSED' } else { Write-Output 
 
 const server = spawn(process.execPath, ['server/index.mjs'], {
   cwd: ROOT,
-  env: { ...process.env, PHONE_TYPE_PORT: String(PORT), PHONE_TYPE_PIN: PIN },
+  env: { ...process.env, SAYTYPE_PORT: String(PORT), SAYTYPE_PIN: PIN },
   stdio: ['ignore', 'pipe', 'pipe'],
 });
 

@@ -1,14 +1,14 @@
 /**
  * Dev client: connect, hello, send one text.
  * Usage: node scripts/dev-client.mjs [host] [port] [pin] [text]
- * Env: PHONE_TYPE_PIN if args omitted for pin.
+ * Env: SAYTYPE_PIN if args omitted for pin.
  */
 import WebSocket from 'ws';
 
 const host = process.argv[2] || '127.0.0.1';
 const port = process.argv[3] || '8787';
-const pin = process.argv[4] || process.env.PHONE_TYPE_PIN || '';
-const text = process.argv[5] || `phone-type 测试 ${new Date().toISOString()}`;
+const pin = process.argv[4] || process.env.SAYTYPE_PIN || '';
+const text = process.argv[5] || `SayType 测试 ${new Date().toISOString()}`;
 
 const url = `ws://${host}:${port}`;
 const ws = new WebSocket(url);

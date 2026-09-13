@@ -27,7 +27,8 @@ data class PhoneTypeConfig(val host: String, val port: Int, val pin: String)
 
 fun parsePhoneTypeConfig(raw: String): PhoneTypeConfig? = try {
     val uri = Uri.parse(raw.trim())
-    if (!uri.scheme.equals("phonetype", ignoreCase = true)) null
+    val scheme = uri.scheme?.lowercase()
+    if (scheme != "saytype" && scheme != "phonetype") null
     else {
         val host = uri.host
         val pin = uri.getQueryParameter("pin")
