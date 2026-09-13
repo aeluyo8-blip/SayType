@@ -3,20 +3,20 @@ import { WebSocketServer } from 'ws';
 import QRCode from 'qrcode';
 import { injectText, listLanIPv4, randomPin } from './inject.mjs';
 
-const PORT = Number(process.env.PHONE_TYPE_PORT || 8787);
-const HOST = process.env.PHONE_TYPE_HOST || '0.0.0.0';
-const PIN = process.env.PHONE_TYPE_PIN || randomPin();
+const PORT = Number(process.env.SAYTYPE_PORT || 8787);
+const HOST = process.env.SAYTYPE_HOST || '0.0.0.0';
+const PIN = process.env.SAYTYPE_PIN || randomPin();
 
 const server = http.createServer((_req, res) => {
   res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
-  res.end('phone-type PC service. Use WebSocket.\n');
+  res.end('SayType PC service. Use WebSocket.\n');
 });
 
 // Register before WebSocketServer: ws's own 'error' listener throws first and
 // breaks the emit chain, so a late handler never sees EADDRINUSE.
 server.on('error', (e) => {
   if (e.code === 'EADDRINUSE') {
-    console.error(`端口 ${PORT} 已被占用：可能已有一个 phone-type 在运行，或用 PHONE_TYPE_PORT=xxxx 换端口。`);
+    console.error(`端口 ${PORT} 已被占用：可能已有一个 SayType 在运行，或用 SAYTYPE_PORT=xxxx 换端口。`);
     process.exit(1);
   }
   console.error(`server error: ${e.message}`);
@@ -27,7 +27,7 @@ const wss = new WebSocketServer({ server });
 
 // Heartbeat: phones vanishing behind NAT / killed apps leave half-open TCP
 // connections that never emit 'close'. Ping every 30s, terminate on 2 misses.
-const HEARTBEAT_MS = Number(process.env.PHONE_TYPE_HEARTBEAT_MS || 30000);
+const HEARTBEAT_MS = Number(process.env.SAYTYPE_HEARTBEAT_MS || 30000);
 const heartbeatTimer = setInterval(() => {
   for (const ws of wss.clients) {
     if (ws.isAlive === false) {
@@ -84,7 +84,7 @@ wss.on('connection', (ws, req) => {
     if (msg.type === 'hello') {
       if (String(msg.pin ?? '') === PIN) {
         authed = true;
-        send(ws, { type: 'welcome', server: 'phone-type', ok: true });
+        send(ws, { type: 'welcome', server: 'SayType', ok: true });
         log(`auth ok ${ip}`);
       } else {
         send(ws, { type: 'error', code: 'bad_pin' });
@@ -135,7 +135,7 @@ wss.on('connection', (ws, req) => {
 server.listen(PORT, HOST, async () => {
   const addrs = listLanIPv4();
   console.log('========================================');
-  console.log('  phone-type PC service');
+  console.log('  SayType PC service');
   console.log('========================================');
   console.log(`  port : ${PORT}`);
   console.log(`  PIN  : ${PIN}`);
@@ -151,14 +151,14 @@ server.listen(PORT, HOST, async () => {
   console.log('========================================');
 
   // 后台模式：供启动脚本/托盘读取，不打印用户输入正文
-  const statusFile = process.env.PHONE_TYPE_STATUS_FILE;
+  const statusFile = process.env.SAYTYPE_STATUS_FILE;
   if (statusFile) {
     try {
       const { writeFileSync, mkdirSync } = await import('node:fs');
       const { dirname, join } = await import('node:path');
       mkdirSync(dirname(statusFile), { recursive: true });
       const configUri = addrs.length
-        ? `phonetype://${addrs[0]}:${PORT}?pin=${PIN}`
+        ? `saytype://${addrs[0]}:${PORT}?pin=${PIN}`
         : '';
       writeFileSync(
         statusFile,
@@ -191,7 +191,7 @@ server.listen(PORT, HOST, async () => {
 
   // 手机 APP 扫这个二维码即可自动填好 IP/端口/PIN
   if (addrs.length) {
-    const configUri = `phonetype://${addrs[0]}:${PORT}?pin=${PIN}`;
+    const configUri = `saytype://${addrs[0]}:${PORT}?pin=${PIN}`;
     try {
       const qr = await QRCode.toString(configUri, { type: 'terminal', small: true });
       console.log('');

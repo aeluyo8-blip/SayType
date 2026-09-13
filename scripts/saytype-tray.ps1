@@ -1,4 +1,4 @@
-﻿# SayType tray icon + background service manager
+# SayType tray icon + background service manager
 # Started by 启动服务.bat
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
@@ -52,9 +52,9 @@ function Ensure-QrFile {
     if (Test-Path $qrPath) {
         try { Remove-Item $qrPath -Force } catch { }
     }
-    $env:PHONE_TYPE_QR_URI = $j.configUri
-    $env:PHONE_TYPE_QR_PATH = $qrPath
-    & node -e "import('qrcode').then(async m=>{await m.default.toFile(process.env.PHONE_TYPE_QR_PATH,process.env.PHONE_TYPE_QR_URI,{width:360,margin:2,color:{dark:'#101828',light:'#FFFFFF'}});})"
+    $env:SAYTYPE_QR_URI = $j.configUri
+    $env:SAYTYPE_QR_PATH = $qrPath
+    & node -e "import('qrcode').then(async m=>{await m.default.toFile(process.env.SAYTYPE_QR_PATH,process.env.SAYTYPE_QR_URI,{width:360,margin:2,color:{dark:'#101828',light:'#FFFFFF'}});})"
     if (Test-Path $qrPath) { return $qrPath }
     return $null
 }
@@ -142,7 +142,7 @@ function Start-NodeService {
     New-Item -ItemType Directory -Force -Path (Join-Path $Root 'runtime') | Out-Null
     Remove-Item $StatusFile -ErrorAction SilentlyContinue
     Remove-Item (Join-Path $Root 'runtime\config-qr.png') -ErrorAction SilentlyContinue
-    $env:PHONE_TYPE_STATUS_FILE = $StatusFile
+    $env:SAYTYPE_STATUS_FILE = $StatusFile
     $script:nodeProc = Start-Process -FilePath 'node' `
         -ArgumentList 'server/index.mjs' `
         -WorkingDirectory $Root `
@@ -183,11 +183,11 @@ function Stop-NodeService {
 }
 
 # --- firewall (first run) ---
-$ruleOutput = netsh advfirewall firewall show rule name="phone-type-8787" 2>$null | Out-String
-if ($ruleOutput -notmatch 'phone-type-8787') {
+$ruleOutput = netsh advfirewall firewall show rule name="SayType-8787" 2>$null | Out-String
+if ($ruleOutput -notmatch 'SayType-8787') {
     try {
         $proc = Start-Process powershell -Verb RunAs -PassThru -WindowStyle Hidden -ArgumentList `
-            '-NoProfile', '-Command', "netsh advfirewall firewall add rule name='phone-type-8787' dir=in action=allow protocol=TCP localport=8787"
+            '-NoProfile', '-Command', "netsh advfirewall firewall add rule name='SayType-8787' dir=in action=allow protocol=TCP localport=8787"
         $proc.WaitForExit()
     } catch { }
 }

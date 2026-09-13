@@ -4,7 +4,7 @@ import os from 'node:os';
 
 // A stuck powershell (clipboard locked by another app, STA hang) must not
 // block the inject queue forever, so every spawn gets a hard timeout.
-const PS_TIMEOUT_MS = Number(process.env.PHONE_TYPE_PS_TIMEOUT || 5000);
+const PS_TIMEOUT_MS = Number(process.env.SAYTYPE_PS_TIMEOUT || 5000);
 
 function runPs(script) {
   return new Promise((resolve, reject) => {

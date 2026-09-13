@@ -14,7 +14,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 
 /**
- * Minimal WebSocket client for the phone-type PC service.
+ * Minimal WebSocket client for the SayType PC service.
  * Protocol: hello+pin → welcome; then text → ack/error.
  * Generation token prevents a stale socket from wiping a newer session.
  * Auto-reconnect with exponential backoff (1s→2s→4s→8s→16s, cap 30s);

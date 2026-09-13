@@ -4,7 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 
 object Prefs {
-    private const val FILE = "phone_type"
+    private const val FILE = "saytype"
     private const val K_HOST = "host"
     private const val K_PORT = "port"
     private const val K_PIN = "pin"

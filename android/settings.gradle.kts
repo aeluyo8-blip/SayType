@@ -12,5 +12,5 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
-rootProject.name = "phone-type"
+rootProject.name = "SayType"
 include(":app")

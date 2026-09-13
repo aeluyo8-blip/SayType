@@ -1,4 +1,4 @@
-﻿# SayType service launcher
+# SayType service launcher
 $ErrorActionPreference = 'Continue'
 $Root = Split-Path -Parent $PSScriptRoot
 Set-Location -LiteralPath $Root
@@ -61,10 +61,10 @@ if (-not (Test-Path "node_modules\ws")) {
     Write-Host ""
 }
 
-$ruleOutput = netsh advfirewall firewall show rule name="phone-type-8787" 2>$null | Out-String
-if ($ruleOutput -notmatch 'phone-type-8787') {
+$ruleOutput = netsh advfirewall firewall show rule name="SayType-8787" 2>$null | Out-String
+if ($ruleOutput -notmatch 'SayType-8787') {
     Write-Host "[i] Need firewall allow for 8787, click Yes in UAC dialog..."
-    $proc = Start-Process powershell -Verb RunAs -PassThru -WindowStyle Hidden -ArgumentList '-NoProfile','-Command',"netsh advfirewall firewall add rule name='phone-type-8787' dir=in action=allow protocol=TCP localport=8787"
+    $proc = Start-Process powershell -Verb RunAs -PassThru -WindowStyle Hidden -ArgumentList '-NoProfile','-Command',"netsh advfirewall firewall add rule name='SayType-8787' dir=in action=allow protocol=TCP localport=8787"
     $proc.WaitForExit()
     if ($proc.ExitCode -eq 0) {
         Write-Host "[+] firewall 8787 allowed" -ForegroundColor Green
@@ -105,7 +105,7 @@ New-Item -ItemType Directory -Force -Path (Join-Path $Root 'runtime') | Out-Null
 Remove-Item $StatusFile -ErrorAction SilentlyContinue
 
 Write-Host "[..] starting service in background (no black window)..."
-$env:PHONE_TYPE_STATUS_FILE = $StatusFile
+$env:SAYTYPE_STATUS_FILE = $StatusFile
 $null = Start-Process -FilePath "node" -ArgumentList "server/index.mjs" -WorkingDirectory $Root -WindowStyle Hidden -PassThru -RedirectStandardOutput $LogFile -RedirectStandardError (Join-Path $Root 'runtime\server.err.log')
 
 $deadline = (Get-Date).AddSeconds(5)
@@ -131,7 +131,7 @@ Write-Host "    PIN: $($status.pin)"
 Write-Host "    stop: stop-service.bat | show PIN: show-pin.bat"
 Write-Host ""
 
-if ($env:PHONE_TYPE_NO_POPUP -ne '1') {
+if ($env:SAYTYPE_NO_POPUP -ne '1') {
     Show-PinPopup -Pin $status.pin -Addrs $status.addrs
 }
 
