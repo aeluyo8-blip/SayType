@@ -10,6 +10,14 @@
 
 **SayType** — Speak here. Type there.
 
+## 界面一览
+
+| 悬浮输入面板 | 悬浮球 | 配对与隐私 |
+|---|---|---|
+| <img src="docs/img/app-input-panel.jpg" width="240" alt="已连接:悬浮输入面板,一键发送到电脑"> | <img src="docs/img/app-floating-bubble.jpg" width="240" alt="任意界面上层唤起的悬浮球"> | <img src="docs/img/app-settings.jpg" width="240" alt="扫码配对与隐私说明"> |
+
+任意 App 上层唤起悬浮球 → 展开输入面板 → 语音说完点「发送到电脑」，文字直接落在电脑光标处。配对信息（IP / 端口 / PIN）扫码自动填入；只传文字不传音频，服务仅监听局域网。
+
 ## 功能
 
 - Android 悬浮球 + 输入面板，任意 App 上层唤起
